@@ -17,5 +17,6 @@ def somar(dados: Numeros):
     resultado = dados.num1 + dados.num2
     return {"resultado": resultado}
 
+
 # O "handler" que a AWS vai buscar é este objeto 'handler'
 handler = Mangum(app)
