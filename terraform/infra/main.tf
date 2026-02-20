@@ -3,16 +3,13 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Public ECR Repository (Must be in us-east-1)
-resource "aws_ecrpublic_repository" "lambda_repo" {
-  provider = aws.us_east_1
-  repository_name = "my-lambda-app"
+# Repositório PRIVADO (O Lambda exige este tipo)
+resource "aws_ecr_repository" "lambda_repo" {
+  name                 = "my-lambda-app"
+  image_tag_mutability = "MUTABLE"
 
-  catalog_data {
-    about_text        = "Public repo for Lambda Docker images"
-    usage_text        = "Usage: docker pull public.ecr.aws/..."
-    operating_systems = ["Linux"]
-    architectures     = ["x86-64"]
+  image_scanning_configuration {
+    scan_on_push = true
   }
 }
 
@@ -31,10 +28,18 @@ resource "aws_iam_role" "lambda_exec" {
 }
 
 # Attach basic execution rights
-resource "aws_iam_role_policy_attachment" "lambda_policy" {
+# Permite logs (o que você já tem)
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
+
+# Permite que o Lambda baixe a imagem do ECR (O que está faltando!)
+resource "aws_iam_role_policy_attachment" "lambda_ecr" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 
 # The Lambda Function
 resource "aws_lambda_function" "docker_lambda" {
@@ -42,8 +47,8 @@ resource "aws_lambda_function" "docker_lambda" {
   role          = aws_iam_role.lambda_exec.arn
   package_type  = "Image"
   
-  # Point this to your ECR Image URI
-  image_uri = "${aws_ecrpublic_repository.lambda_repo.repository_uri}:latest"
+  # Agora referenciando o repositório privado
+  image_uri = "${aws_ecr_repository.lambda_repo.repository_url}:latest"
 
   timeout     = 30
   memory_size = 512
