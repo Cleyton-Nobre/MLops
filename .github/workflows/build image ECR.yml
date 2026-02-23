@@ -56,9 +56,9 @@ jobs:
           ECR_REGISTRY: ${{ secrets.ECR_ALIAS }}.dkr.ecr.us-east-1.amazonaws.com
           ECR_REPOSITORY: my-lambda-app
           IMAGE_TAG: ${{ github.sha }}
+        working-directory: ./app
         run: |
           # Build and push using the commit SHA as the tag for better versioning
-          cd app
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
@@ -81,13 +81,11 @@ jobs:
       - name: setup terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: print dir
-        run: ls -R
-
       - name: Init Terraform Lambda
+        working-directory: ./terraform/lambda
         run: terraform init
-        working-directory: ./terraform/lambda
-
+        
       - name: Apply Terraform Lambda
-        run: terraform apply -auto-approve
         working-directory: ./terraform/lambda
+        run: terraform apply -auto-approve
+        
