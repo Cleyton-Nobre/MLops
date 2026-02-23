@@ -19,4 +19,7 @@ def somar(dados: Numeros):
 
 
 # O "handler" que a AWS vai buscar é este objeto 'handler'
-handler = Mangum(app)
+handler = Mangum(app, lifespan="off")
+
+# Se o erro persistir, force o root_path no FastAPI:
+app = FastAPI(root_path="/prod")
