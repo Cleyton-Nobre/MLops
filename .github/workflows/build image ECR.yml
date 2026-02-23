@@ -78,6 +78,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Init Terraform Lambda
         run: terraform init
         working-directory: ./terraform/lambda
