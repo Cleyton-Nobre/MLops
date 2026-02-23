@@ -27,7 +27,7 @@ jobs:
         working-directory: ./terraform/ecr # Path to your .tf files
 
       - name: Terraform Apply
-        run: terraform destroy -auto-approve && terraform apply -auto-approve
+        run: terraform apply -auto-approve
         working-directory: ./terraform/ecr
       
 
