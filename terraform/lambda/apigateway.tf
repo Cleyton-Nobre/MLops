@@ -8,11 +8,27 @@ resource "aws_api_gateway_resource" "resource" {
   path_part   = "{proxy+}"
 }
 
+resource "aws_api_gateway_method" "root_method" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_rest_api.api.root_resource_id
+  http_method   = "ANY"
+  authorization = "NONE"
+}
+
 resource "aws_api_gateway_method" "method" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.resource.id
   http_method   = "ANY"
   authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "root_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_rest_api.api.root_resource_id
+  http_method             = aws_api_gateway_method.root_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.docker_lambda.invoke_arn
 }
 
 resource "aws_api_gateway_integration" "integration" {
@@ -23,6 +39,8 @@ resource "aws_api_gateway_integration" "integration" {
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.docker_lambda.invoke_arn
 }
+
+
 
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowExecutionFromAPIGateway"
@@ -36,8 +54,9 @@ resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
   depends_on = [
-    aws_api_gateway_integration.integration
-  ]
+  aws_api_gateway_integration.integration,
+  aws_api_gateway_integration.root_integration
+    ]
 }
 
 resource "aws_api_gateway_stage" "stage" {
