@@ -66,23 +66,22 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
+  build-lambda:
+    needs: push-ecr
+    runs-on: ubuntu-latest
+    environment: AWS
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-  # Update_Lambda:
-  #   needs: deploy
-  #   runs-on: ubuntu-latest
-  #   environment: AWS
-  #   steps:
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-  #         aws-region: us-east-1
+      - name: Init Terraform Lambda
+        run: terraform init
+        working-directory: ./terraform/lambda
 
-  #     - name: Update Lambda Function
-  #       run: |
-  #         aws lambda update-function-code \
-  #           --function-name my-docker-lambda \
-  #           --image-uri public.ecr.aws/${{ secrets.ECR_ALIAS }}/my-lambda-app:${{ github.sha }}
-
-  
+      - name: Apply Terraform Lambda
+        run: terraform apply -auto-approve
+        working-directory: ./terraform/lambda
