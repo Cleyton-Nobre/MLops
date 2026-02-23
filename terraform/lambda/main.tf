@@ -1,15 +1,13 @@
 provider "aws" {
-  alias  = "us_east_1"
   region = "us-east-1"
 }
 
-# Repositório PRIVADO (O Lambda exige este tipo)
-resource "aws_ecr_repository" "lambda_repo" {
-  name                 = "my-lambda-app"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
+data "terraform_remote_state" "ecr_info" {
+  backend = "s3"
+  config = {
+    bucket = "my-app-tfstate-2026-xyz"
+    key    = "ecr/terraform.tfstate" # Onde o estado do ECR foi salvo
+    region = "us-east-1"
   }
 }
 
@@ -27,29 +25,25 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# Attach basic execution rights
-# Permite logs (o que você já tem)
+# Permissões básicas (CloudWatch Logs)
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Permite que o Lambda baixe a imagem do ECR (O que está faltando!)
-resource "aws_iam_role_policy_attachment" "lambda_ecr" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
-
-# The Lambda Function
+# A Lambda Function
+# IMPORTANTE: Se o ECR e a Lambda estiverem no mesmo projeto Terraform, 
+# a referência abaixo funciona. Se forem projetos separados, use uma variável para o image_uri.
 resource "aws_lambda_function" "docker_lambda" {
   function_name = "my-docker-lambda"
   role          = aws_iam_role.lambda_exec.arn
   package_type  = "Image"
   
-  # Agora referenciando o repositório privado
-  image_uri = "${aws_ecr_repository.lambda_repo.repository_url}:latest"
+  # Referenciando o repositório do outro arquivo
+  image_uri = "${data.terraform_remote_state.ecr_info.outputs.repository_url}:latest"
 
   timeout     = 30
   memory_size = 512
+
+  depends_on = [aws_iam_role_policy_attachment.lambda_logs]
 }
