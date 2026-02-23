@@ -81,6 +81,9 @@ jobs:
       - name: setup terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: print dir
+        run: ls -R
+
       - name: Init Terraform Lambda
         run: terraform init
         working-directory: ./terraform/lambda
