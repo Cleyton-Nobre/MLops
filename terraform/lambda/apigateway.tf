@@ -1,49 +1,37 @@
-# 1. Cria a API HTTP (v2)
-resource "aws_apigatewayv2_api" "http_api" {
-  name          = "fastapi-http-api"
+module "api_gateway" {
+  source  = "terraform-aws-modules/apigateway-v2/aws"
+  version = "~> 5.0" # Garante a versão mais estável
+
+  name          = "my-fastapi-http"
+  description   = "API Gateway v2 para FastAPI"
   protocol_type = "HTTP"
+
+  create_api_domain_name = false # Coloque true se tiver um domínio próprio
+
+  # O segredo está aqui: uma única integração para tudo
+  integrations = {
+    "ANY /{proxy+}" = {
+      lambda_arn             = aws_lambda_function.docker_lambda.arn
+      payload_format_version = "2.0"
+      timeout_milliseconds   = 30000
+    }
+    "ANY /" = {
+      lambda_arn             = aws_lambda_function.docker_lambda.arn
+      payload_format_version = "2.0"
+      timeout_milliseconds   = 30000
+    }
+  }
+
+  tags = {
+    Environment = "prod"
+  }
 }
 
-# 2. Cria o Stage (O $default faz com que não precise de /prod na URL)
-resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.http_api.id
-  name        = "$default"
-  auto_deploy = true
-}
-
-# 3. Integração Única com o Lambda
-resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id           = aws_apigatewayv2_api.http_api.id
-  integration_type = "AWS_PROXY"
-
-  integration_uri    = aws_lambda_function.docker_lambda.invoke_arn
-  payload_format_version = "2.0"
-}
-
-# 4. Rota "Catch-all" (Qualquer método, qualquer caminho)
-resource "aws_apigatewayv2_route" "catch_all" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "ANY /{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-}
-
-# 5. Rota para a Raiz (/)
-resource "aws_apigatewayv2_route" "root" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "ANY /"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-}
-
-# 6. Permissão para o Gateway chamar o Lambda
+# Permissão para o API Gateway chamar o Lambda (necessário mesmo com módulo)
 resource "aws_lambda_permission" "apigw_v2" {
   statement_id  = "AllowExecutionFromAPIGatewayV2"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.docker_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
-}
-
-# Output para facilitar sua vida
-output "api_url" {
-  value = aws_apigatewayv2_stage.default.invoke_url
+  source_arn    = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
 }
