@@ -1,13 +1,17 @@
-name: Deploy to AWS Lambda
+name: Deploy ECR Image
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build-terraform-infra:
+  build-docker-image:
     runs-on: ubuntu-latest
     environment: AWS
+    env:
+        ECR_REGISTRY: ${{secrets.ECR_ALIAS}}.dkr.ecr.us-east-1.amazonaws.com
+        ECR_REPOSITORY: my-lambda-app
+        IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -19,69 +23,39 @@ jobs:
           aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Public ECR is us-east-1
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Login to Amazon Public ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: private
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ./terraform/infra # Path to your .tf files
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
-        working-directory: ./terraform/infra
-
-
-  # deploy:
-  #   runs-on: ubuntu-latest
-  #   environment: AWS
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
-
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-  #         aws-region: us-east-1 # Public ECR is us-east-1
-
-  #     - name: Login to Amazon Public ECR
-  #       uses: aws-actions/amazon-ecr-login@v2
-  #       with:
-  #         registry-type: private
-
-  #     - name: Build, Tag, and Push Image
-  #       env:
-  #         ECR_REGISTRY: private.ecr.aws/${{ secrets.ECR_ALIAS }}
-  #         ECR_REPOSITORY: my-lambda-app
-  #         IMAGE_TAG: ${{ github.sha }}
-  #       run: |
-  #         # Build and push using the commit SHA as the tag for better versioning
-  #         cd app
-  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Build, Tag, and Push Image
+        working-directory: ./app
+        run: |
+          # Build and push using the commit SHA as the tag for better versioning
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
-  #         # Also update the 'latest' tag
-  #         docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          # Also update the 'latest' tag
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
 
-  # Update_Lambda:
-  #   needs: deploy
-  #   runs-on: ubuntu-latest
-  #   environment: AWS
-  #   steps:
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-  #         aws-region: us-east-1
+  Update_Lambda:
+    needs: build-docker-image
+    runs-on: ubuntu-latest
+    environment: AWS
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-  #     - name: Update Lambda Function
-  #       run: |
-  #         aws lambda update-function-code \
-  #           --function-name my-docker-lambda \
-  #           --image-uri public.ecr.aws/${{ secrets.ECR_ALIAS }}/my-lambda-app:${{ github.sha }}
+      - name: Update Lambda Function
+        run: |
+          aws lambda update-function-code \
+            --function-name my-docker-lambda \
+            --image-uri ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:lastest
 
   
