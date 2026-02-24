@@ -8,10 +8,6 @@ jobs:
   build-docker-image:
     runs-on: ubuntu-latest
     environment: AWS
-    env:
-      ECR_REGISTRY: ${{secrets.ECR_ALIAS}}.dkr.ecr.us-east-1.amazonaws.com
-      ECR_REPOSITORY: my-lambda-app
-      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -30,6 +26,10 @@ jobs:
 
       - name: Build, Tag, and Push Image
         working-directory: ./app
+        env:
+          ECR_REGISTRY: ${{secrets.ECR_ALIAS}}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY: my-lambda-app
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build and push using the commit SHA as the tag for better versioning
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -53,6 +53,10 @@ jobs:
           aws-region: us-east-1
 
       - name: Update Lambda Function
+        env:
+          ECR_REGISTRY: ${{secrets.ECR_ALIAS}}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY: my-lambda-app
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           aws lambda update-function-code \
             --function-name my-docker-lambda \
