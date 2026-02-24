@@ -6,6 +6,8 @@ COPY requirements.txt .
 # Instala as dependências no diretório de tarefas do Lambda
 RUN pip install -r requirements.txt
 
+COPY model.pkl ${LAMBDA_TASK_ROOT}
+
 # Copia o código da aplicação
 COPY app.py ${LAMBDA_TASK_ROOT}
 
