@@ -7,7 +7,7 @@ resource "aws_apigatewayv2_api" "http_api" {
 # 2. Cria o Stage (O $default faz com que não precise de /prod na URL)
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http_api.id
-  name  = "prod"
+  name        = "$default"
   auto_deploy = true
 }
 
