@@ -26,9 +26,19 @@ def read_root():
 
 @app.post("/predict")
 def predict(dados: features):
+    # 1. Extrai os valores do Pydantic
+    input_data = [list(dados.model_dump().values())]
     
-    pred = model.predict([list(dados.dict().values())])[0]
-    return {"features": dados.dict(), "prediction": pred}
+    # 2. Faz a predição
+    prediction_raw = model.predict(input_data)[0]
+    
+    # 3. CONVERSÃO ESSENCIAL: transforma numpy.int64 em int comum do Python
+    # Se o seu modelo for de regressão (números quebrados), use float(prediction_raw)
+    prediction_final = int(prediction_raw) 
 
+    return {
+        "features": dados.model_dump(), 
+        "prediction": prediction_final
+    }
 # O "handler" que a AWS vai buscar é este objeto 'handler'
 handler = Mangum(app)
