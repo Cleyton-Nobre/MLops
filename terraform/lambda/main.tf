@@ -43,7 +43,7 @@ resource "aws_lambda_function" "docker_lambda" {
   image_uri = "${data.terraform_remote_state.ecr_info.outputs.repository_url}:latest"
 
   timeout     = 30
-  memory_size = 512
+  memory_size = 1024
 
   depends_on = [aws_iam_role_policy_attachment.lambda_logs]
 }
