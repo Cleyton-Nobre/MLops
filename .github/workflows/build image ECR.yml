@@ -51,11 +51,26 @@ jobs:
         with:
           registry-type: private
 
+      - name: Check if ECR Repository Exists
+        id: check-image
+        env:
+          ECR_REPOSITORY: my-lambda-app
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          if aws ecr describe-images --repository-name $ECR_REPOSITORY --image-tag latest > /dev/null 2>&1; then
+            echo "ECR Image already exists. Skipping build."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "ECR Image does not exist."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build, Tag, and Push Image
         env:
           ECR_REGISTRY: ${{ secrets.ECR_ALIAS }}.dkr.ecr.us-east-1.amazonaws.com
           ECR_REPOSITORY: my-lambda-app
           IMAGE_TAG: ${{ github.sha }}
+        if: steps.check-image.outputs.exists == "false"
         working-directory: ./app
         run: |
           # Build and push using the commit SHA as the tag for better versioning
