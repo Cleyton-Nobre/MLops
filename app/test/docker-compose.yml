@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  ml-lambda:
+    build: ../Dockerfile
+    container_name: ml_prediction_api
+    ports:
+      - "8080:8080"
+    # Opcional: define variáveis de ambiente se necessário
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Garante que o container reinicie se cair por falta de memória, por exemplo
+    restart: unless-stopped
