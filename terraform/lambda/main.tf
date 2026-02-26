@@ -6,7 +6,7 @@ data "terraform_remote_state" "ecr_info" {
   backend = "s3"
   config = {
     bucket = "my-app-tfstate-2026-xyz"
-    key    = "lambda/terraform.tfstate" # Onde o estado do ECR foi salvo
+    key    = "ecr/terraform.tfstate" # Onde o estado do ECR foi salvo
     region = "us-east-1"
   }
 }
