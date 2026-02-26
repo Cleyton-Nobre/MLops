@@ -1,17 +1,66 @@
 name: Test Model
 
 on: 
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main]
+  workflow_call:
 
 jobs:
-  test-model:
+  train-model:
     runs-on: ubuntu-latest
+    outputs:
+      model-trained: ${{ steps.train.outputs.model-trained }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set python version
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Train Model and Save as model.pkl
+        id: train
+        working-directory: ./app
+        run: |
+          pip install -r requirements_train.txt
+          python3 train_model.py
+
+          # Indica que o modelo foi treinado com sucesso
+          echo "model-trained=true" >> $GITHUB_OUTPUT
+      
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: app/model.pkl
+
+      - name: Setup CML
+        uses: iterative/setup-cml@v3
+      
+      - name: Post CML Report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ./app
+        run: |
+          echo "## Model Performance Metrics" > report.md
+          cat metrics.txt >> report.md
+
+          echo "![ROC Curve](auc_plot.png)" >> report.md
+
+          cml comment create report.md
+
+  test-model-endpoint:
+    runs-on: ubuntu-latest
+    if: needs.train-model.outputs.model-trained == 'true' # Só executa se o modelo foi treinado
+    needs: train-model
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Trained Model Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: ./app
 
       - name: Docker Compose Up
         working-directory: ./app/test

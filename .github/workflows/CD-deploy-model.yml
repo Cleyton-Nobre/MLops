@@ -9,7 +9,11 @@ permissions:
   pull-requests: write
 
 jobs:
+  test-and-build:
+    uses: ./.github/workflows/CI-test-model.yml
+
   build-docker-image:
+    needs: test-and-build
     runs-on: ubuntu-latest
     environment: AWS
     steps:
@@ -28,31 +32,37 @@ jobs:
         with:
           registry-type: private
         
-      - name: Set python version
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
+      # - name: Set python version
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: '3.8'
 
-      - name: Train Model and Save as model.pkl
-        working-directory: ./app
-        run: |
-          pip install -r requirements_train.txt
-          python3 train_model.py
+      # - name: Train Model and Save as model.pkl
+      #   working-directory: ./app
+      #   run: |
+      #     pip install -r requirements_train.txt
+      #     python3 train_model.py
 
-      - name: Setup CML
-        uses: iterative/setup-cml@v3
+      # - name: Setup CML
+      #   uses: iterative/setup-cml@v3
       
-      - name: Post CML Report
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: ./app
-        run: |
-          echo "## Model Performance Metrics" > report.md
-          cat metrics.txt >> report.md
+      # - name: Post CML Report
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   working-directory: ./app
+      #   run: |
+      #     echo "## Model Performance Metrics" > report.md
+      #     cat metrics.txt >> report.md
 
-          echo "![ROC Curve](auc_plot.png)" >> report.md
+      #     echo "![ROC Curve](auc_plot.png)" >> report.md
 
-          cml comment create report.md
+      #     cml comment create report.md
+
+      - name: Download Trained Model Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: ./app
 
       - name: Build, Tag, and Push Image
         working-directory: ./app
@@ -69,8 +79,7 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-
-  Update_Lambda:
+  Update-Lambda:
     needs: build-docker-image
     runs-on: ubuntu-latest
     environment: AWS
