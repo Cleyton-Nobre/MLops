@@ -35,6 +35,19 @@ jobs:
           pip install -r requirements_train.txt
           python3 train_model.py
 
+      - name: Post CML Report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ./app
+        run: |
+          pip install cml
+          echo "## Model Performance Metrics" > report.md
+          cat metrics.txt >> report.md
+
+          echo "![ROC Curve](auc_plot.png)" >> report.md
+
+          cml send-comment report.md
+
       - name: Build, Tag, and Push Image
         working-directory: ./app
         env:
