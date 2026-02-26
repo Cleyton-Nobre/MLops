@@ -35,8 +35,10 @@ jobs:
           pip install -r requirements_train.txt
           python3 train_model.py
 
+      - name: Setup CML
+        uses: iterative/setup-cml@v3
+      
       - name: Post CML Report
-      - uses: iterative/setup-cml@v3 # <--- Isso "instala" o CML no container do GitHub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ./app
