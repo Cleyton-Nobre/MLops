@@ -16,7 +16,7 @@ jobs:
       - name: Docker Compose Up
         working-directory: ./app/test
         run: |
-          docker-compose up -d 
+          docker compose up -d 
           sleep 10 # Aguarda o container iniciar
         
       - name: Test API Endpoint
