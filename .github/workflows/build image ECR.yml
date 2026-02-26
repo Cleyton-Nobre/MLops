@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write    # Permite que o CML poste comentários no commit
+  pull-requests: write
+
 jobs:
   build-docker-image:
     runs-on: ubuntu-latest
