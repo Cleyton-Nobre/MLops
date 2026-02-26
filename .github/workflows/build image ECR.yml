@@ -48,7 +48,7 @@ jobs:
 
           echo "![ROC Curve](auc_plot.png)" >> report.md
 
-          cml send-comment report.md
+          cml comment create report.md
 
       - name: Build, Tag, and Push Image
         working-directory: ./app
