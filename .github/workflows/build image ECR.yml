@@ -36,11 +36,11 @@ jobs:
           python3 train_model.py
 
       - name: Post CML Report
+      - uses: iterative/setup-cml@v3 # <--- Isso "instala" o CML no container do GitHub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ./app
         run: |
-          pip install cml
           echo "## Model Performance Metrics" > report.md
           cat metrics.txt >> report.md
 
