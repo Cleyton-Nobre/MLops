@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   ml-lambda:
-    build: ../Dockerfile
+    build: ../
     container_name: ml_prediction_api
     ports:
       - "8080:8080"
