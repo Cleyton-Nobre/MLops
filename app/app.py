@@ -1,4 +1,4 @@
-from time import time
+import time
 
 from fastapi import FastAPI
 from mangum import Mangum
