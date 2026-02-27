@@ -31,33 +31,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registry-type: private
-        
-      # - name: Set python version
-      #   uses: actions/setup-python@v4
-      #   with:
-      #     python-version: '3.8'
-
-      # - name: Train Model and Save as model.pkl
-      #   working-directory: ./app
-      #   run: |
-      #     pip install -r requirements_train.txt
-      #     python3 train_model.py
-
-      # - name: Setup CML
-      #   uses: iterative/setup-cml@v3
       
-      # - name: Post CML Report
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   working-directory: ./app
-      #   run: |
-      #     echo "## Model Performance Metrics" > report.md
-      #     cat metrics.txt >> report.md
-
-      #     echo "![ROC Curve](auc_plot.png)" >> report.md
-
-      #     cml comment create report.md
-
       - name: Download Trained Model Artifact
         uses: actions/download-artifact@v4
         with:

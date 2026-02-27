@@ -1,4 +1,4 @@
 .terraform*
-.env
+.venv
 mlruns
 *model.pkl

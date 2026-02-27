@@ -50,8 +50,8 @@ jobs:
 
   test-model-endpoint:
     runs-on: ubuntu-latest
-    if: needs.train-model.outputs.model-trained == 'true' # Só executa se o modelo foi treinado
     needs: train-model
+    if: needs.train-model.outputs.model-trained == 'true' # Só executa se o modelo foi treinado
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -87,6 +87,5 @@ jobs:
           if [[ "$RESPONSE" == *"prediction"* ]]; then
             echo "✅ Teste passou: Predição encontrada."
           else
-            echo "❌ Teste falhou: Resposta inesperada."
             exit 1
           fi
