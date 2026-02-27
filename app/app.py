@@ -44,27 +44,30 @@ def predict(dados: features):
 
     latency = (time.time() - start) * 1000
 
-    cloudwatch.put_metric_data(
-        Namespace="MusicGenrePrediction",
-        MetricData=[
-            {
-                "MetricName": "PredictionMade",
-                "Dimensions": [
-                    {
-                        "Name": "PredictedClass",
-                        "Value": str(prediction_final)
-                    }
-                ],
-                "Value": 1,
-                "Unit": "Count"
-            },
-            {
-                "MetricName": "PredictionLatency",
-                "Value": latency,
-                "Unit": "Milliseconds",
-            }
-        ]
-    )
+    try:
+        cloudwatch.put_metric_data(
+            Namespace="MusicGenrePrediction",
+            MetricData=[
+                {
+                    "MetricName": "PredictionMade",
+                    "Dimensions": [
+                        {
+                            "Name": "PredictedClass",
+                            "Value": str(prediction_final)
+                        }
+                    ],
+                    "Value": 1,
+                    "Unit": "Count"
+                },
+                {
+                    "MetricName": "PredictionLatency",
+                    "Value": latency,
+                    "Unit": "Milliseconds",
+                }
+            ]
+        )
+    except Exception as e:
+        print(f"Erro ao enviar métrica para CloudWatch: {e}")
 
     return {
         "features": dados.model_dump(), 
