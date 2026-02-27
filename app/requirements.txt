@@ -2,3 +2,4 @@ fastapi
 mangum
 joblib
 scikit-learn==1.3.2
+boto3
